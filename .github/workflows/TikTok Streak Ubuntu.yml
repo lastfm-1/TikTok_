@@ -1,0 +1,85 @@
+name: TikTok Daily Streak (Ubuntu)
+
+on:
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+env:
+  NAME: "TikTok Daily Streak Bot"
+  AUTHOR: "TimeNitch"
+  ORIGINAL_REPO: "https://github.com/TimeNitch/Tiktok-Streak-Bot-using-cookies"
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Create secret files
+        env:
+          COOKIE_DATA: ${{ secrets.COOKIE }}
+          EXCEPTION_DATA: ${{ secrets.EXCEPTION }}
+          DISCORD_WEBHOOK_DATA: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TELEGRAM_BOT_TOKEN_DATA: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID_DATA: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          def write_required_secret(env_name, file_name):
+              value = os.environ.get(env_name, "")
+              if not value.strip():
+                  raise SystemExit(f"{env_name} secret is empty or missing")
+              Path(file_name).write_text(value.strip(), encoding="utf-8")
+              print(f"{file_name} created")
+              print(f"{file_name} length:", len(value.strip()))
+
+          def write_optional_secret(env_name, file_name):
+              value = os.environ.get(env_name, "")
+              if value.strip():
+                  Path(file_name).write_text(value.strip(), encoding="utf-8")
+                  print(f"{file_name} created")
+                  print(f"{file_name} length:", len(value.strip()))
+              else:
+                  print(f"{env_name} is empty or missing; skipped {file_name}")
+
+          def write_optional_file_always(env_name, file_name):
+              value = os.environ.get(env_name, "")
+              Path(file_name).write_text(value.strip(), encoding="utf-8")
+              print(f"{file_name} created")
+              print(f"{file_name} length:", len(value.strip()))
+
+          write_required_secret("COOKIE_DATA", "cookie.txt")
+          write_optional_file_always("EXCEPTION_DATA", "exception.txt")
+          write_optional_secret("DISCORD_WEBHOOK_DATA", "discord_webhook.txt")
+          write_optional_secret("TELEGRAM_BOT_TOKEN_DATA", "telegram_bot_token.txt")
+          write_optional_secret("TELEGRAM_CHAT_ID_DATA", "telegram_chat_id.txt")
+          PY
+
+      - name: Create and Install Python virtual environment
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Run TikTok Bot Script
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          source venv/bin/activate
+          python Program.py
+
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiktok-debug-artifacts
+          path: |
+            *.log
+            *.png

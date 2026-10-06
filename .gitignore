@@ -1,0 +1,11 @@
+﻿cookie.txt
+exception.txt
+discord_webhook.txt
+telegram_bot_token.txt
+telegram_chat_id.txt
+tiktok_bot.log
+*.png
+.idea
+.venv
+
+config.ini
